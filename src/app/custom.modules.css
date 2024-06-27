@@ -1,0 +1,16 @@
+
+:root{
+    --background-main : "#FFF9EF" !important;
+    --background-white : "#FFFDFA" !important;
+}
+
+.loginImage{
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.60) 16.13%, rgba(0, 0, 0, 0.00) 56%, #000 87%), linear-gradient(0deg, rgba(0, 0, 0, 0.40) 0%, rgba(0, 0, 0, 0.40) 100%), url("https://i.pinimg.com/originals/82/9f/3f/829f3f2cbe939af137b27f49a941b19f.jpg") lightgray 50% / cover no-repeat;
+}
+
+.mainBackgroundColor{
+    background-color: var(--background-main) !important;
+}
+.whiteBackgroundColor{
+    background-color: var(--background-white) !important;
+}
