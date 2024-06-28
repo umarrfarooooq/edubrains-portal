@@ -93,7 +93,7 @@ const OtpVerification = () => {
   };
 
   return (
-    <Suspense>
+    <Suspense fallback={<div>Loading...</div>}>
       <div className="bg-[#FFF9EF] min-h-screen flex items-center justify-center">
         <div className='container mx-auto px-2 flex items-center justify-center p-4 sm:p-8'>
           <div className='p-8 md:p-12 lg:p-20 min-w-full md:min-w-[42rem] lg:min-h-[40rem] bg-[#F4F1EB] rounded-3xl border-[#F4F1EB]'>

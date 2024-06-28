@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import PasswordChangedSuccess from "@/components/Auth/PasswordChangedSuccess";
@@ -32,9 +32,12 @@ const PasswordChanged = () => {
     return null
   }
   return (
-    <AuthRedirect requireAuth={true} redirectTo="/">
-      <PasswordChangedSuccess />
-    </AuthRedirect>
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthRedirect requireAuth={true} redirectTo="/">
+        <PasswordChangedSuccess />
+      </AuthRedirect>
+    </Suspense>
+    
   );
 };
 
