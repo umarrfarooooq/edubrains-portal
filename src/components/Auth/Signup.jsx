@@ -1,29 +1,50 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Logo from "@public/logo.png";
 import LogoWhite from "@public/logo white.png";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import InputField from "@/components/ui/Custom-Input";
-import Link from "next/link";
 import axios from "axios";
 import InputError from "@/components/Input-Error/Input-Error";
 import { GoogleLogin } from "@react-oauth/google";
-import EmailIcon from "@/components/icons/EmailIcon";
 const axiosInstense = axios.create({
   withCredentials: true,
   baseURL: process.env.NEXT_PUBLIC_API_URL,
 });
 
-const LoginComponent = () => {
+const SignupComponent = ({token}) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [inviteToken, setInviteToken] = useState("");
+
+  useEffect(() => {
+    if (token) {
+      setInviteToken(token);
+      initiateSignup(token);
+    }else{
+      router.push("/login");
+    }
+  }, []);
+
+
+  const initiateSignup = async (token) => {
+    try {
+      const response = await axiosInstense.get(`api/v1/users/initiate-signup/${token}`);
+      setEmail(response.data.email);
+    } catch (error) {
+      setError("Invalid or expired invite token");
+    }
+  };
+
+
+
   const togglePasswordVisibility = () => {
     setShowPassword((prevShowPassword) => !prevShowPassword);
   };
@@ -32,15 +53,22 @@ const LoginComponent = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    if (!email.trim() || !password.trim()) {
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
       setLoading(false);
-      setError("Email and Password is required");
+      return;
+    }
+
+    if (!password.trim()) {
+      setError("Password is required");
+      setLoading(false);
       return;
     }
 
     try {
-      const response = await axiosInstense.post("api/v1/users/login", {
-        email,
+      const response = await axiosInstense.post("api/v1/users/complete-signup", {
+        inviteToken,
         password,
       });
       localStorage.setItem("token", response.data.token);
@@ -48,42 +76,24 @@ const LoginComponent = () => {
       router.push("/");
     } catch (error) {
       setLoading(false);
-      if (error.response) {
-        if (error.response.status === 401) {
-          setError("Invalid email or password");
-        } else {
-          setError(
-            error.response.data.message || "An error occurred during login"
-          );
-        }
-      } else if (error.request) {
-        setError("No response from server. Please try again.");
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
-      console.error("Login error:", error);
+      setError(error.response?.data?.message || "An error occurred during signup");
     }
   };
 
-  const handleGoogleLogin = async (credentialResponse) => {
+  const handleGoogleSignup = async (credentialResponse) => {
     setLoading(true);
     setError("");
     try {
-      const response = await axiosInstense.post(
-        "api/v1/users/login-with-google",
-        {
-          googleToken: credentialResponse.credential,
-        }
-      );
+      const response = await axiosInstense.post("api/v1/users/complete-signup", {
+        inviteToken,
+        googleToken: credentialResponse.credential,
+      });
       localStorage.setItem("token", response.data.token);
       setLoading(false);
       router.push("/");
     } catch (error) {
       setLoading(false);
-      setError(
-        error.response?.data?.message || "An error occurred during Google login"
-      );
-      console.error("Google login error:", error);
+      setError(error.response?.data?.message || "An error occurred during Google signup");
     }
   };
 
@@ -91,6 +101,14 @@ const LoginComponent = () => {
     <div className="bg-[#FFF9EF] min-h-screen">
       <div className="container mx-auto px-2">
         <div className="flex item-center justify-between p-4 sm:p-8 gap-4">
+          <div className="hidden w-full lg:min-h-[60rem] loginImage rounded-3xl overflow-hidden p-20 xl:flex flex-col justify-between">
+            <div className="w-full flex items-center justify-center">
+              <Image src={LogoWhite} className="w-40 h-8" alt="logo" />
+            </div>
+            <div className="w-full text-xl lg:text-3xl xl:text-5xl font-semibold text-[#FFFDFA]">
+              Seamlessly manage your entire school ecosystem.
+            </div>
+          </div>
           <div className="w-full lg:min-h-[60rem] bg-[#FFFDFA] rounded-3xl border-[#F4F1EB]">
             <div className="p-4 md:p-12 lg:p-20 flex flex-col gap-12">
               <div>
@@ -98,11 +116,11 @@ const LoginComponent = () => {
               </div>
               <div>
                 <div>
-                  <div className="text-xl md:text-2xl font-semibold">
-                    Login into your account.
+                  <div className="text-xl md:text-2xl font-normal">
+                    Sign Up with <span className="font-semibold">{email}</span>
                   </div>
                   <div className="text-base font-normal">
-                    Only authorized accounts can log in.{" "}
+                    Only invited accounts can signup.{" "}
                   </div>
                 </div>
               </div>
@@ -113,14 +131,6 @@ const LoginComponent = () => {
               >
                 {error && <InputError errorMessage={error} />}
                 <div className="flex flex-col gap-6">
-                <InputField
-                  label="Enter your email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  icon={<EmailIcon width={20} height={16} />}
-                />
                   <div className="border relative border-[#A9A9A9] px-4 rounded-lg flex items-center justify-start gap-2">
                     <div className="px-2 absolute text-xs top-[-.5rem] bg-[#FFFDFA]">
                       Enter your password
@@ -152,7 +162,7 @@ const LoginComponent = () => {
                     <input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
-                      className="border-none w-full py-[0.88rem] outline-none"
+                      className="border-none w-full py-[0.88rem] outline-none bg-transparent"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
@@ -184,9 +194,69 @@ const LoginComponent = () => {
                       </svg>
                     </span>
                   </div>
-                </div>
-                <div className="flex items-center justify-end">
-                  <Link href="/forget-password">Forget Password?</Link>
+                  <div className="border relative border-[#A9A9A9] px-4 rounded-lg flex items-center justify-start gap-2">
+                    <div className="px-2 absolute text-xs top-[-.5rem] bg-[#FFFDFA]">
+                      Confirm your password
+                    </div>
+                    <span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="20"
+                        viewBox="0 0 16 20"
+                        fill="none"
+                      >
+                        <path
+                          d="M0.999023 11C0.999023 10.4696 1.20974 9.96086 1.58481 9.58579C1.95988 9.21071 2.46859 9 2.99902 9H12.999C13.5295 9 14.0382 9.21071 14.4132 9.58579C14.7883 9.96086 14.999 10.4696 14.999 11V17C14.999 17.5304 14.7883 18.0391 14.4132 18.4142C14.0382 18.7893 13.5295 19 12.999 19H2.99902C2.46859 19 1.95988 18.7893 1.58481 18.4142C1.20974 18.0391 0.999023 17.5304 0.999023 17V11Z"
+                          stroke="#333333"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M3.99902 9V5C3.99902 3.93913 4.42045 2.92172 5.1706 2.17157C5.92074 1.42143 6.93816 1 7.99902 1C9.05989 1 10.0773 1.42143 10.8275 2.17157C11.5776 2.92172 11.999 3.93913 11.999 5V9M6.99902 14C6.99902 14.2652 7.10438 14.5196 7.29192 14.7071C7.47945 14.8946 7.73381 15 7.99902 15C8.26424 15 8.51859 14.8946 8.70613 14.7071C8.89367 14.5196 8.99902 14.2652 8.99902 14C8.99902 13.7348 8.89367 13.4804 8.70613 13.2929C8.51859 13.1054 8.26424 13 7.99902 13C7.73381 13 7.47945 13.1054 7.29192 13.2929C7.10438 13.4804 6.99902 13.7348 6.99902 14Z"
+                          stroke="#333333"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Confirm your password"
+                      className="border-none w-full py-[0.88rem] outline-none bg-transparent"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                    <span
+                      onClick={togglePasswordVisibility}
+                      className="cursor-pointer"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="22"
+                        height="16"
+                        viewBox="0 0 22 16"
+                        fill="none"
+                      >
+                        <path
+                          d="M8.77832 7.99993C8.77832 8.5893 9.01245 9.15453 9.42919 9.57128C9.84594 9.98803 10.4112 10.2222 11.0005 10.2222C11.5899 10.2222 12.1551 9.98803 12.5719 9.57128C12.9886 9.15453 13.2228 8.5893 13.2228 7.99993C13.2228 7.41056 12.9886 6.84533 12.5719 6.42858C12.1551 6.01184 11.5899 5.77771 11.0005 5.77771C10.4112 5.77771 9.84594 6.01184 9.42919 6.42858C9.01245 6.84533 8.77832 7.41056 8.77832 7.99993Z"
+                          stroke="#333333"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M21 8C18.3333 12.4444 15 14.6667 11 14.6667C7 14.6667 3.66667 12.4444 1 8C3.66667 3.55556 7 1.33333 11 1.33333C15 1.33333 18.3333 3.55556 21 8Z"
+                          stroke="#333333"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <Button
@@ -196,7 +266,7 @@ const LoginComponent = () => {
                     {loading && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
-                    Login
+                    Signup
                   </Button>
                 </div>
               </form>
@@ -238,7 +308,7 @@ const LoginComponent = () => {
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <GoogleLogin
-                    onSuccess={handleGoogleLogin}
+                    onSuccess={handleGoogleSignup}
                     onError={() => {
                       setError(
                         "Google Sign-In was unsuccessful. Please try again."
@@ -317,18 +387,10 @@ const LoginComponent = () => {
               </div>
             </div>
           </div>
-          <div className="hidden w-full lg:min-h-[60rem] loginImage rounded-3xl overflow-hidden p-20 xl:flex flex-col justify-between">
-            <div className="w-full flex items-center justify-center">
-              <Image src={LogoWhite} className="w-40 h-8" alt="logo" />
-            </div>
-            <div className="w-full text-xl lg:text-3xl xl:text-5xl font-semibold text-[#FFFDFA]">
-              Seamlessly manage your entire school ecosystem.
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default LoginComponent;
+export default SignupComponent;

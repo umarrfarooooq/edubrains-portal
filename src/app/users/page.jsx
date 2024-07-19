@@ -1,15 +1,13 @@
 "use client"
-
-import HomeComponent from "@/components/Home/HomeComponent";
+import UserSide from "@/components/Users/UserSide";
 import AuthRedirect from "@/lib/AuthRedirect";
-
-const Home = () => {
+const Users = () => {
   return (
     <>
         <AuthRedirect requireAuth={true}>
-            <HomeComponent />
+          <UserSide />
         </AuthRedirect>
     </>
   );
 }
-export default Home;
+export default Users;

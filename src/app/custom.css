@@ -1,0 +1,12 @@
+
+:root{
+    --background-main : "#FFF9EF" !important;
+    --background-white : "#FFFDFA" !important;
+}
+
+.mainBackgroundColor{
+    background-color: var(--background-main) !important;
+}
+.whiteBackgroundColor{
+    background-color: var(--background-white) !important;
+}

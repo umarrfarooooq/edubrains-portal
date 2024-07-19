@@ -26,7 +26,7 @@ const ForgetPassword = () => {
     setLoading(true)
 
     try {
-      const response = await axiosInstense.post('api/v1/users/forget-password', { email })
+      const response = await axiosInstense.post('api/v1/users/forgot-password', { email })
       setSuccess('Password reset code sent to your email.')
       setLoading(false)
       router.push(`/email-otp?email=${encodeURIComponent(email)}`)
