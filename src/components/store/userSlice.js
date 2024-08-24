@@ -49,6 +49,31 @@ export const getAllUsers = createAsyncThunk(
   }
 );
 
+export const updateUser = createAsyncThunk(
+  'user/update',
+  async ({ id, userData }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.put(`api/v1/users/update/${id}`, userData);
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message || 'Update failed');
+    }
+  }
+);
+
+export const fetchUserById = createAsyncThunk(
+  'user/fetchById',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get(`api/v1/users/${id}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+
 const userSlice = createSlice({
   name: 'user',
   initialState: {
@@ -109,7 +134,7 @@ const userSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      builder.addCase(getAllUsers.fulfilled, (state, action) => {
+      .addCase(getAllUsers.fulfilled, (state, action) => {
         state.loading = false;
         state.users = action.payload.users;
         state.pagination = {
@@ -121,6 +146,37 @@ const userSlice = createSlice({
       .addCase(getAllUsers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload.message;
+      })
+      .addCase(updateUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUser.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedUser = action.payload.user;
+        const index = state.users.findIndex(user => user.id === updatedUser.id);
+        if (index !== -1) {
+          state.users[index] = updatedUser;
+        }
+        if (state.currentUser && state.currentUser.id === updatedUser.id) {
+          state.currentUser = updatedUser;
+        }
+      })
+      .addCase(updateUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.message;
+      })
+      .addCase(fetchUserById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserById.fulfilled, (state, action) => {
+        state.currentUser = action.payload.user;
+        state.loading = false;
+      })
+      .addCase(fetchUserById.rejected, (state, action) => {
+        state.error = action.payload.message;
+        state.loading = false;
       });
   },
 });

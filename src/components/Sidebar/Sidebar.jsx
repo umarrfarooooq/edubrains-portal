@@ -155,7 +155,7 @@ const Sidebar = () => {
                       className="py-2"
                     >
                       <Link
-                        href="/"
+                        href="/finance"
                         className={`flex items-center rounded-lg ${
                           activeNav === "Finance"
                             ? "text-[#151515] font-semibold"
@@ -334,7 +334,7 @@ const Sidebar = () => {
                       className="py-2"
                     >
                       <Link
-                        href="/"
+                        href="/finance"
                         className={`flex items-center rounded-lg ${
                           activeNav === "Finance"
                             ? "text-[#151515] font-semibold"
